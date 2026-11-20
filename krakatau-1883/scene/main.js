@@ -163,7 +163,7 @@ const SHOTS = [
     cam: [{ t: 23.9, pos: L(-30, 45, 95), look: L(0, 0, 20), fov: 46 }, { t: 25.95, dur: 2.0, pos: L(-40, 110, 230), look: L(0, 0, -260), fov: 48, roll: 3 }] },
   { id: 'mourn', t0: 25.95, t1: 31.95, env: WO, tod: 'night', near: 0.05, fog: [200, 3000], inkFar: 420, dof: 12, shadow: 14,
     cam: [{ t: 25.95, pos: L(0.85, 1.55, -2.55), look: L(1.5, 1.0, -0.6), fov: 36 }, { t: 27.0, dur: 1.0, pos: L(0.9, 1.5, -2.35), look: L(1.5, 1.0, -0.6), fov: 35 },
-      { t: 29.25, dur: 2.2, pos: L(-6.5, 6, 11), look: L(0, 0, -40), fov: 44, roll: 3 }, { t: 31.95, dur: 2.6, pos: L(-1, 20, 34), look: L(0, 0, -110), fov: 48, roll: 0 }] },
+      { t: 28.15, dur: 1.15, pos: L(0.2, 4.2, -5.5), look: L(1.2, 0.8, -0.2), fov: 40, roll: 2 }, { t: 29.25, dur: 1.1, pos: L(-4.5, 7.5, 9), look: L(0, 0, -40), fov: 44, roll: 3 }, { t: 31.95, dur: 2.6, pos: L(-1, 20, 34), look: L(0, 0, -110), fov: 48, roll: 0 }] },
   { id: 'globe_ash', t0: 31.95, t1: 34.75, env: GL, tod: 'space', near: 0.1, fog: [5000, 9000], inkFar: 420,
     cam: [{ t: 31.95, pos: GP(108, -2, 30), look: [0, 0, 0], fov: 42 }, { t: 34.75, dur: 2.7, pos: GP(50, 18, 42), look: [0, 0, 0], fov: 42, roll: -4 }] },
   { id: 'redsky', t0: 34.75, t1: 38.35, env: ST, tod: 'red', near: 0.05, fog: [60, 400], inkFar: 420, dof: 6, shadow: 14,
