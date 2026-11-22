@@ -29,17 +29,18 @@ import json as _j
 if len(sys.argv) > 3: SPANS = [tuple(x) for x in _j.load(open(sys.argv[3]))]
 
 words = []  # (start, end, text)
-for a, b, text in SPANS:
+for si, (a, b, text) in enumerate(SPANS):
     ws = text.split()
     wt = [SPOKEN.get(re.sub(r'[^\w]', '', w), len(re.sub(r'[^\w]', '', w))) + 2 for w in ws]
     tot, acc = sum(wt), a
     for w, x in zip(ws, wt):
         d = (b - a) * x / tot
-        words.append([acc, acc + d, w]); acc += d
+        words.append([acc, acc + d, w, si]); acc += d
 
 # chunks of up to 3 words, breaking after punctuation
 chunks, cur = [], []
 for w in words:
+    if cur and cur[-1][3] != w[3]: chunks.append(cur); cur = []
     cur.append(w)
     if len(cur) == 3 or re.search(r'[,.!?:]$', w[2]):
         chunks.append(cur); cur = []
