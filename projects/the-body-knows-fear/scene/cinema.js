@@ -108,6 +108,21 @@ export function humanize(p, hs = [0.128, 0.142, 0.135]) {
     J[n + 'Kn'].position.y = -0.39; J[n + 'Ank'].position.y = -0.4; J[n + 'Hip'].position.x = s * 0.075;
   }
 }
+// hijab: fabric over the crown, sides, back and under the chin, with an oval opening for the face; drape to the shoulders.
+// Built relative to the head size, so every hijab NPC has the same proportions in every shot.
+export function addHijab(p, col) {
+  const mat = charMat(new THREE.Color(col), null, 'cloth', p.shadeU), hs = p.headMesh.scale;
+  const g = new THREE.Group(); g.scale.set(hs.x * 1.12, hs.y * 1.1, hs.z * 1.12); p.j.head.add(g);
+  const mk = (geo) => { const m = new THREE.Mesh(geo, mat); m.layers.set(CHAR_LAYER); m.castShadow = true; g.add(m); return m; };
+  const W = 1.0; // half-width of the face opening (rad)
+  mk(new THREE.SphereGeometry(1, 36, 12, 0, Math.PI * 2, 0, 0.72)).rotation.x = -0.12;             // crown + forehead band
+  mk(new THREE.SphereGeometry(1, 36, 20, Math.PI / 2 + W, Math.PI * 2 - 2 * W, 0.66, 1.62)).rotation.x = -0.12; // sides + back
+  const chin = mk(new THREE.SphereGeometry(1, 36, 10, 0, Math.PI * 2, 2.2, 0.94)); chin.rotation.x = -0.12; // wrap under the chin
+  // drape over the shoulders (in spine space so it follows the body)
+  const dr = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.215, 0.2, 28, 1, true), mat); dr.material.side = THREE.DoubleSide;
+  dr.position.set(0, 0.36, 0.005); dr.scale.z = 0.8; dr.layers.set(CHAR_LAYER); dr.castShadow = true; p.j.spine.add(dr);
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.088, 0.08, 24), mat); top.position.set(0, 0.47, -0.005); top.layers.set(CHAR_LAYER); p.j.spine.add(top);
+}
 // ---------- the moviegoer (own design: young adult, mustard jacket over a white tee, jeans, short black hair) ----------
 export function makeHero() {
   const SKIN = '#c98d68';
@@ -149,15 +164,14 @@ export function makeAudience(scene, list) {
   const TOPS = ['#3b4a6b', '#5a3a4a', '#2f4f4a', '#6b5a3a', '#44405e', '#5e3434'];
   list.forEach(([row, k, style], i) => {
     const p = new Puppet({ skin: i % 3 ? '#b98466' : '#d1a07c', top: TOPS[i % TOPS.length], pants: '#22252e', hair: style === 'hijab' ? null : '#151012', bun: style === 'bun' });
-    if (style === 'hijab') {
-      const hj = new THREE.Mesh(new THREE.SphereGeometry(1.08, 28, 18, 0, Math.PI * 2, 0, 2.2), charMat(new THREE.Color(['#5b3d6e', '#2f5a6a', '#7a4a3a'][i % 3]), null, 'cloth', p.shadeU));
-      hj.scale.set(0.148, 0.16, 0.155); hj.rotation.x = -0.25; hj.layers.set(CHAR_LAYER); p.j.head.add(hj);
-      const dr = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 0.26, 20), hj.material); dr.position.set(0, -0.19, -0.01); dr.layers.set(CHAR_LAYER); p.j.head.add(dr);
-    }
+    p.hijab = style === 'hijab' ? ['#5b3d6e', '#2f5a6a', '#7a4a3a'][i % 3] : null;
     humanize(p); p.j.head.children.forEach((m) => { if (m.isMesh && m.geometry.parameters?.radius === 1.03) m.scale.copy(p.headMesh.scale); if (m.isMesh && m.geometry.parameters?.radius === 0.075) m.position.set(0, 0.15, -0.1); });
     for (const n of p.noodles || []) n.src.scale.x = 2.6;
+    if (p.hijab) addHijab(p, p.hijab);
     p.place(SEAT_X(k) + 0, ROW_Y(row), ROW_Z(row) + 0.02, 180); p.pose({ ...POSES.sit, lSh: [-30, 0, 14], rSh: [-30, 0, -14] });
-    p.face({ expr: 'neutral' }); p.shadeU.value = 0.35; scene.add(p.root); out.push(p);
+    // same face design as the hero (consistent cast); default = watching the film
+    p.face = function (f) { const o = { expr: f.expr && f.expr !== 'neutral' ? f.expr : 'watch', blink: !!f.blink, look: f.look || [0, -0.12] }; const k = JSON.stringify(o); if (k === this.faceKey) return; drawFace(this.fg, o); this.faceTex.needsUpdate = true; this.faceKey = k; };
+    p.faceKey = ''; p.face({}); p.shadeU.value = 0.35; scene.add(p.root); out.push(p);
   });
   return out;
 }

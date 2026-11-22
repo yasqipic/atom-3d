@@ -176,7 +176,7 @@ function cinemaCam(t) {
   if (t < 20.8) { // orbit from 3/4 front to profile, then push into the side of the head
     const A = anc(16.0), k = ss(seg(t, 14.4, 19.4)), a = (35 - 125 * k) * D2R, r = 1.4 - 0.3 * k;
     let pos = A.at(Math.sin(a) * r, 0.06 - 0.05 * k, Math.cos(a) * r), look = A.at(0, -0.15 + 0.13 * k, 0), fov = 38;
-    const p2 = ss(seg(t, 19.55, 20.75)); pos = lerpV(pos, A.at(-0.2, 0, 0), p2); look = lerpV(look, A.h, p2); fov = 38 - 6 * p2;
+    const p2 = ss(seg(t, 19.5, 20.7)); pos = lerpV(pos, A.at(-0.3, 0.03, 0.06), p2); look = lerpV(look, A.at(0, 0.02, 0.03), p2); fov = 38 - 22 * p2;
     return { pos, look, fov, dof: 6 + 4 * p2, focus: pos.distanceTo(look) };
   }
   if (t < 48.4) { const A = anc(46.0); return { pos: A.at(-0.62, 0.04, 1.5), look: A.at(0.0, -0.26, 0), fov: 37 * creep(t, 0.001, 44.4), dof: 6, focus: 1.55 }; }
@@ -204,9 +204,11 @@ function renderCinema(t, f) {
   // neighbour flinches too (a beat later, smaller)
   const nb = track([{ t: 0, pose: { ...POSES.sit, lSh: [-30, 0, 14], rSh: [-30, 0, -14] } }, { t: 4.36, pose: { ...POSES.sit, spine: [-14, 0, 0], head: [-10, -10, 0], lSh: [-70, 0, 0], rSh: [-75, 0, 0], lEl: [-95, 0, 0], rEl: [-95, 0, 0] }, dur: 0.12 }, { t: 6.6, pose: { ...POSES.sit, spine: [-8, 0, 0], lSh: [-40, 0, 10], rSh: [-40, 0, -10], lEl: [-80, 0, 0], rEl: [-80, 0, 0] }, dur: 0.8 }], t);
   neighbor.pose(nb);
+  { let e = 'watch'; for (const [kt, ke] of [[4.4, 'shock'], [5.4, 'stunned'], [7.6, 'uneasy'], [10.5, 'watch']]) if (t >= kt) e = ke;
+    const bl = (f % 97 < 4) || (t > 4.36 && t < 4.43); neighbor.face({ expr: e, blink: bl && e !== 'shock', look: [0.05, -0.12] }); }
   // sound rings (Scene 04)
   rings.forEach((m, i) => { const t0 = 16.95 + i * 0.36, k = (t - t0) / 1.25; if (k < 0 || k > 1 || t > 20.4) { m.visible = false; return; }
-    m.visible = true; const sp = SPK[i % 2]; const tgt = H0.clone(); m.position.copy(lerpV(sp, tgt, 0.12 + k * 0.82)); m.lookAt(tgt); m.scale.setScalar(0.18 + 0.55 * k); m.material.uniforms.op.value = 0.3 * Math.sin(Math.PI * k); });
+    m.visible = true; const sp = SPK[i % 2]; const tgt = H0.clone(); m.position.copy(lerpV(sp, tgt, 0.12 + k * 0.82)); m.lookAt(tgt); m.scale.setScalar(0.18 + 0.55 * k); m.material.uniforms.op.value = 0.3 * Math.sin(Math.PI * k) * (1 - ss(seg(t, 19.5, 20.2))); });
   CN.beamU.op.value = 0.05 + 0.05 * (room - 0.85);
   const c = cinemaCam(t);
   if (Q.get('dbg')) { const d = Q.get('dbg').split(',').map(Number); c.pos = V(d.slice(0, 3)); c.look = V(d.slice(3, 6)); c.fov = d[6] || 40; c.dof = 0; }
@@ -224,11 +226,11 @@ function heartPhase(t) { // integrate beat rate: 1.15 Hz -> 2.3 Hz from 35.9 to 
   if (t < a) return r0 * t; if (t < b) { const u = t - a, d = b - a; return r0 * a + r0 * u + (r1 - r0) * u * u / (2 * d); } return r0 * a + (r0 + r1) / 2 * (b - a) + r1 * (t - b);
 }
 const AMY_W = new THREE.Vector3();
-function renderScience(t, mode) {
+function renderScience(t, mode, bodyOn) {
   lookScience();
   const S = SC;
   S.U.bT.value = t; S.U.bAct.value = 0.9 * ss(seg(t, 21.5, 22.4)) * (1 - 0.6 * seg(t, 25.0, 25.6));
-  const showBody = t > 30.4;
+  const showBody = bodyOn ?? t > 30.95;
   S.body.visible = showBody; S.skinG.u.op.value = 0.55 * ss(seg(t, 30.7, 32.0));
   S.parts.forEach((m) => { m.visible = showBody; });
   const inside = mode === 'inside' || (mode !== 'opaque' && t >= 25.3);
@@ -255,15 +257,15 @@ function renderScience(t, mode) {
   const B = new THREE.Vector3(0, 1.705, 0.005);
   S.amy[0].getWorldPosition(AMY_W);
   let pos, look, fov = 40, dof = 0, focus;
-  if (t < 25.3) { const k = ss(seg(t, 20.4, 25.4)), a = (-90 + 48 * k) * D2R, r = 0.34 - 0.04 * k; pos = V([B.x + Math.sin(a) * r, B.y + 0.03 + 0.05 * k, B.z + Math.cos(a) * r]); look = B.clone().add(V([0, -0.004, 0])); fov = 40; dof = 2; }
+  if (t < 25.3) { const k = ss(seg(t, 20.4, 25.4)), a = (-90 + 48 * k) * D2R, r = 0.3 - 0.13 * (1 - ss(seg(t, 20.3, 21.9))); pos = V([B.x + Math.sin(a) * r, B.y + 0.03 + 0.05 * k, B.z + Math.cos(a) * r]); look = B.clone().add(V([0, -0.004, 0])); fov = 40; dof = 2; }
   else if (t < 30.5) { const k = ss(seg(t, 25.2, 27.4)), k2 = ss(seg(t, 27.4, 30.5)); const a = (-42 + 18 * k + 26 * k2) * D2R, r = 0.3 - 0.13 * k - 0.02 * k2;
     const c = B.clone().lerp(AMY_W, k); pos = V([c.x + Math.sin(a) * r, c.y + 0.02 - 0.03 * k, c.z + Math.cos(a) * r]); look = c; fov = 40; dof = 5 * k; }
-  else if (t < 33.1) { const k = ss(seg(t, 30.5, 32.9)), c = AMY_W.clone().lerp(V([0, 1.62, 0]), k); const a = (-24 - 6 * k) * D2R, r = 0.15 + 0.85 * k; pos = V([c.x + Math.sin(a) * r, c.y + 0.03 * (1 - k) + 0.12 * k, c.z + Math.cos(a) * r]); look = c; dof = 4 * (1 - k); }
+  else if (t < 33.1) { const k = ss(seg(t, 30.5, 32.9)), c = AMY_W.clone().lerp(V([0, 1.62, 0]), k); const a = (2 - 32 * k) * D2R, r = 0.15 + 0.85 * k; pos = V([c.x + Math.sin(a) * r, c.y - 0.01 * (1 - k) + 0.12 * k, c.z + Math.cos(a) * r]); look = c; dof = 4 * (1 - k); }
   else if (t < 35.75) { const k = ss(seg(t, 33.1, 35.6)); const c = V([0, 1.6 - 0.32 * k, -0.02 * k]); const a = (-30 - 25 * k) * D2R, r = 1.0 - 0.15 * k; pos = V([c.x + Math.sin(a) * r, c.y + 0.05, c.z + Math.cos(a) * r]); look = c; }
   else if (t < 37.25) { const k = ss(seg(t, 35.6, 36.35)), hp = S.heart.getWorldPosition(new THREE.Vector3()); const c = V([0, 1.28, -0.02]).lerp(hp, k); const a = (-55 + 75 * k) * D2R, r = 0.85 - 0.5 * k; pos = V([c.x + Math.sin(a) * r, c.y + 0.03 - 0.07 * k, c.z + Math.cos(a) * r]); look = c; dof = 5 * k; }
-  else if (t < 38.7) { const k = ss(seg(t, 37.0, 37.8)), hp = S.heart.getWorldPosition(new THREE.Vector3()), sh = V([0.21, 1.33, 0.02]); const c = hp.clone().lerp(sh, k); const a = (-15 + 60 * k) * D2R, r = 0.38 + 0.3 * k; pos = V([c.x + Math.sin(a) * r, c.y + 0.04, c.z + Math.cos(a) * r]); look = c; dof = 5; }
+  else if (t < 38.7) { const k = ss(seg(t, 37.25, 38.05)), hp = S.heart.getWorldPosition(new THREE.Vector3()), sh = V([0.21, 1.33, 0.02]); const c = hp.clone().lerp(sh, k); const a = (20 + 25 * k) * D2R, r = 0.35 + 0.33 * k; pos = V([c.x + Math.sin(a) * r, c.y - 0.04 * (1 - k) + 0.04 * k, c.z + Math.cos(a) * r]); look = c; dof = 5 * k; }
   else { const k = ss(seg(t, 38.6, 39.6)); const A = S.ARM[1], c = V([0.21, 1.33, 0.02]).lerp(V([(A.el[0] + A.wr[0]) / 2, (A.el[1] + A.wr[1]) / 2, (A.el[2] + A.wr[2]) / 2]), k);
-    const a = 45 * D2R, r = 0.42 - 0.33 * k; pos = V([c.x + Math.sin(a) * r, c.y + 0.04 - 0.02 * k, c.z + Math.cos(a) * r]); look = c; dof = 5; fov = 40 - 8 * k; }
+    const a = 45 * D2R, r = 0.68 - 0.59 * k; pos = V([c.x + Math.sin(a) * r, c.y + 0.04 - 0.02 * k, c.z + Math.cos(a) * r]); look = c; dof = 5; fov = 40 - 8 * k; }
   if (Q.get('dbs')) { const d = Q.get('dbs').split(',').map(Number); pos = V(d.slice(0, 3)); look = V(d.slice(3, 6)); fov = d[6] || 40; dof = 0; }
   applyCam(camS, { pos: pos.toArray(), look: look.toArray(), fov, roll: 0 });
   Ls.update(V([0, 1.4, 0]));
@@ -290,9 +292,10 @@ const END = 59.5;
 window.renderFrame = (f) => {
   const t = f / FPS;
   let url;
-  if (t < 20.45) url = renderCinema(t, f);
-  else if (t < 20.8) url = XF(0, 0, () => renderCinema(t, f), () => renderScience(t), 20.45, 20.8, t, f);
+  if (t < 20.4) url = renderCinema(t, f);
+  else if (t < 20.85) url = XF(0, 0, () => renderCinema(t, f), () => renderScience(t), 20.4, 20.85, t, f);
   else if (t >= 25.0 && t < 25.6) url = XF(0, 0, () => renderScience(t, 'opaque'), () => renderScience(t, 'inside'), 25.0, 25.6, t, f);
+  else if (t >= 30.6 && t < 31.3) url = XF(0, 0, () => renderScience(t, undefined, false), () => renderScience(t, undefined, true), 30.6, 31.3, t, f);
   else if (t < 39.15) url = renderScience(t);
   else if (t < 39.55) url = XF(0, 0, () => renderScience(t), () => renderSkin(t), 39.15, 39.55, t, f);
   else if (t < 44.2) url = renderSkin(t);
